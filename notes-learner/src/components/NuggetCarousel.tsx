@@ -14,7 +14,7 @@ export default function NuggetCarousel({ nuggets, topics }: NuggetCarouselProps)
   const [currentIndex, setCurrentIndex] = useState(0);
   const [filteredNuggets, setFilteredNuggets] = useState(nuggets);
   const [selectedTopic, setSelectedTopic] = useState<string>('all');
-  const autoAdvanceTimer = useRef<NodeJS.Timeout>();
+  const autoAdvanceTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Filter nuggets when topic selection changes
   useEffect(() => {
