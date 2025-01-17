@@ -15,8 +15,9 @@ export default function ReviewMode({ nuggets, topics }: ReviewModeProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
-    const progress = progressManager.getAllProgress();
-    const seenNuggets = nuggets.filter(nugget => progress[nugget.id]);
+    const progress = progressManager.getProgress();  // Remove the nuggets argument
+  const seenNuggets = nuggets.filter(nugget => progress[nugget.id]);
+  
     
     // Shuffle the seen nuggets
     const shuffled = [...seenNuggets].sort(() => Math.random() - 0.5);

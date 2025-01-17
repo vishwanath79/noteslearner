@@ -18,7 +18,7 @@ export default function StatsPanel({ nuggets }: StatsPanelProps) {
   useEffect(() => {
     if (!nuggets?.length) return;
 
-    const progress = progressManager.getProgress(nuggets);
+    const progress = progressManager.getProgress();
     const completedNuggets = nuggets.filter(n => progress[n.id]?.completed).length;
     const completionRate = Math.round((completedNuggets / nuggets.length) * 100) || 0;
     const streak = progressManager.getCurrentStreak() || 0;

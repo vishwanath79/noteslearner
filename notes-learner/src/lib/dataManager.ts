@@ -28,10 +28,10 @@ export const dataManager = {
           if (!topic || !description) return null;
 
           return {
-            id: `${topic.id}-${index}`,
+            id: `${topic}-${index}`,
             topic,
             description,
-            topicId: topic.id,
+            topicId: data.id,
           };
         })
         .filter((nugget): nugget is Nugget => nugget !== null);

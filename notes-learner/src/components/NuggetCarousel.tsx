@@ -14,8 +14,7 @@ export default function NuggetCarousel({ nuggets, topics }: NuggetCarouselProps)
   const [currentIndex, setCurrentIndex] = useState(0);
   const [filteredNuggets, setFilteredNuggets] = useState(nuggets);
   const [selectedTopic, setSelectedTopic] = useState<string>('all');
-  const autoAdvanceTimer = useRef<NodeJS.Timeout | null>(null);
-
+  const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout>>(null);
   // Filter nuggets when topic selection changes
   useEffect(() => {
     const filtered = selectedTopic === 'all'
@@ -25,30 +24,27 @@ export default function NuggetCarousel({ nuggets, topics }: NuggetCarouselProps)
     setCurrentIndex(0);
   }, [selectedTopic, nuggets]);
 
+  const goToNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % filteredNuggets.length);
+  };
+
+  const goToPrevious = () => {
+    setCurrentIndex((prev) => 
+      (prev - 1 + filteredNuggets.length) % filteredNuggets.length
+    );
+  };
+
   // Auto-advance setup
   useEffect(() => {
     const settings = JSON.parse(localStorage.getItem('notes-learner-settings') || '{}');
     
     if (settings.autoAdvance) {
-      autoAdvanceTimer.current = setInterval(() => {
-        goToNext();
-      }, settings.autoAdvanceDelay * 1000 || 5000);
+      const timer = setInterval(goToNext, settings.autoAdvanceDelay * 1000 || 5000);
+      autoAdvanceTimer.current = timer;
+      
+      return () => clearInterval(timer);
     }
-
-    return () => {
-      if (autoAdvanceTimer.current) {
-        clearInterval(autoAdvanceTimer.current);
-      }
-    };
   }, []);
-
-  const goToNext = () => {
-    setCurrentIndex((prev: number) => (prev + 1) % filteredNuggets.length);
-  };
-  
-  const goToPrevious = () => {
-    setCurrentIndex((prev: number) => (prev - 1 + filteredNuggets.length) % filteredNuggets.length);
-  };
 
   // Add keyboard navigation
   useEffect(() => {
@@ -62,7 +58,7 @@ export default function NuggetCarousel({ nuggets, topics }: NuggetCarouselProps)
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, []);  // Empty dependency array since goToNext/Previous are stable
+  }, []);
 
   // Get current topic color
   const getCurrentTopicColor = () => {

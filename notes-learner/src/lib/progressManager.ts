@@ -1,7 +1,8 @@
 const isServer = () => typeof window === 'undefined';
 
 export const progressManager = {
-  getProgress(nuggets: any[] = []) {
+  // Remove the nuggets parameter since it's not being used
+  getProgress(): Record<string, { completed: boolean; lastReviewed: string }> {
     if (isServer()) return {};
     
     try {

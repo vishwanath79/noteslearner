@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { dataManager } from '@/lib/dataManager';
-import { Topic } from '@/types';
+//import { Topic } from '@/types';
 
 interface DataManagerProps {
   onDataChange: () => void;
