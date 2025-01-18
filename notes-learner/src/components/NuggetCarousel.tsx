@@ -15,6 +15,7 @@ export default function NuggetCarousel({ nuggets, topics }: NuggetCarouselProps)
   const [filteredNuggets, setFilteredNuggets] = useState(nuggets);
   const [selectedTopic, setSelectedTopic] = useState<string>('all');
   const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout>>(null);
+
   // Filter nuggets when topic selection changes
   useEffect(() => {
     const filtered = selectedTopic === 'all'
@@ -90,11 +91,25 @@ export default function NuggetCarousel({ nuggets, topics }: NuggetCarouselProps)
       <div className="relative h-[300px]">
         <button 
           onClick={goToPrevious}
-          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-12
-                     p-2 rounded-full bg-gray-200 dark:bg-gray-700 
-                     hover:bg-gray-300 dark:hover:bg-gray-600 z-10"
+          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6
+                   p-3 rounded-full bg-[#1DB954] text-white
+                   hover:bg-opacity-90 transition-colors
+                   shadow-lg z-10"
+          aria-label="Previous nugget"
         >
-          ←
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="24" 
+            height="24" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"
+          >
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
         </button>
 
         <AnimatePresence mode="wait">
@@ -117,11 +132,25 @@ export default function NuggetCarousel({ nuggets, topics }: NuggetCarouselProps)
 
         <button 
           onClick={goToNext}
-          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-12
-                     p-2 rounded-full bg-gray-200 dark:bg-gray-700 
-                     hover:bg-gray-300 dark:hover:bg-gray-600 z-10"
+          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-6
+                   p-3 rounded-full bg-[#1DB954] text-white
+                   hover:bg-opacity-90 transition-colors
+                   shadow-lg z-10"
+          aria-label="Next nugget"
         >
-          →
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="24" 
+            height="24" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"
+          >
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
         </button>
       </div>
 

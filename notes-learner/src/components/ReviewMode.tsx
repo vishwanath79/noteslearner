@@ -15,9 +15,8 @@ export default function ReviewMode({ nuggets, topics }: ReviewModeProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
-    const progress = progressManager.getProgress();  // Remove the nuggets argument
-  const seenNuggets = nuggets.filter(nugget => progress[nugget.id]);
-  
+    const progress = progressManager.getProgress();
+    const seenNuggets = nuggets.filter(nugget => progress[nugget.id]);
     
     // Shuffle the seen nuggets
     const shuffled = [...seenNuggets].sort(() => Math.random() - 0.5);
@@ -32,6 +31,11 @@ export default function ReviewMode({ nuggets, topics }: ReviewModeProps) {
 
   const handleNext = () => {
     setCurrentIndex(prev => (prev + 1) % reviewNuggets.length);
+  };
+
+  const handleComplete = (nuggetId: string) => {
+    progressManager.markAsCompleted(nuggetId);
+    handleNext(); // Move to next nugget after completion
   };
 
   if (reviewNuggets.length === 0) {
@@ -59,11 +63,19 @@ export default function ReviewMode({ nuggets, topics }: ReviewModeProps) {
         />
         
         <button
-          onClick={handleNext}
-          className="mt-4 w-full py-2 px-4 bg-blue-500 text-white rounded-lg
-                     hover:bg-blue-600 transition-colors"
+          onClick={() => handleComplete(reviewNuggets[currentIndex].id)}
+          className="mt-4 w-full py-2 px-4 bg-[#1DB954] text-white rounded-lg
+                     hover:bg-opacity-90 transition-colors"
         >
-          Next Review
+          Mark as Reviewed
+        </button>
+
+        <button
+          onClick={handleNext}
+          className="mt-2 w-full py-2 px-4 bg-[#282828] text-white rounded-lg
+                     hover:bg-[#3E3E3E] transition-colors"
+        >
+          Skip
         </button>
       </div>
     </div>
