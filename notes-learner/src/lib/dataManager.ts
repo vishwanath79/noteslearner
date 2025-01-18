@@ -1,106 +1,115 @@
-import { Topic, Nugget } from '@/types';
 import matter from 'gray-matter';
+import { Topic, Nugget } from '@/types';
 
-// Add this helper function at the top
 const isServer = () => typeof window === 'undefined';
+const DATA_KEY = 'notes-learner-data';
 
 export const dataManager = {
-  parseMarkdown(content: string): { topic: Topic; nuggets: Nugget[] } {
-    try {
-      const { data, content: markdownContent } = matter(content);
-      
-      const topic: Topic = {
-        id: data.id || data.name.toLowerCase().replace(/\s+/g, '-'),
-        name: data.name,
-        description: data.description || '',
-        color: data.color || '#1DB954',
-      };
-
-      
-      const nuggets = markdownContent
-        .split('\n\n')
-        .filter(Boolean)
-        .map((nuggetString, index) => {
-          const lines = nuggetString.split('\n');
-          const topic = lines[0]?.replace('T:', '').trim();
-          const description = lines[1]?.replace('D:', '').trim();
-          
-          if (!topic || !description) return null;
-
-          return {
-            id: `${topic}-${index}`,
-            topic,
-            description,
-            topicId: data.id,
-          };
-        })
-        .filter((nugget): nugget is Nugget => nugget !== null);
-
-      return { topic, nuggets };
-    } catch (error) {
-      console.error('Error parsing markdown:', error);
-      throw new Error('Invalid markdown format');
-    }
-  },
-
-  saveToLocalStorage(topic: Topic, nuggets: Nugget[]) {
+  importData(content: string) {
     if (isServer()) return;
 
     try {
-      const stored = localStorage.getItem('notes-learner-data') || '{}';
-      const data = JSON.parse(stored);
+      // Parse with gray-matter
+      const parsed = matter(content);
+      console.log('Parsed content:', {
+        data: parsed.data,
+        content: parsed.content
+      });
+
+      // Create topic from frontmatter
+      const topic: Topic = {
+        id: parsed.data.id?.toString() || '',
+        name: parsed.data.name?.toString() || '',
+        color: parsed.data.color?.toString() || '#000000'
+      };
+
+      // Validate topic data
+      if (!topic.id || !topic.name || !topic.color) {
+        console.error('Invalid topic data:', topic);
+        throw new Error('Invalid frontmatter: missing required fields');
+      }
+
+      // Parse nuggets from content
+      const nuggets: Nugget[] = [];
+      let currentQuestion = '';
+
+      parsed.content.split('\n').forEach(line => {
+        line = line.trim();
+        if (!line) return;
+        
+        if (line.startsWith('T:')) {
+          currentQuestion = line.substring(2).trim();
+        } else if (line.startsWith('D:') && currentQuestion) {
+          nuggets.push({
+            id: `${topic.id}-${nuggets.length}`,
+
+            topic: currentQuestion,  // Changed from 'question' to 'title'
+            description: line.substring(2).trim(),
+            topicId: topic.id
+          });
+          currentQuestion = '';
+        }
+      });
+
+      console.log('Parsed nuggets:', nuggets);
+
+      // Get existing data
+      const existingData = this.getAllData();
       
-      data[topic.id] = { topic, nuggets };
-      localStorage.setItem('notes-learner-data', JSON.stringify(data));
+      // Merge new data with existing data
+      const updatedTopics = [...existingData.topics.filter((t: Topic) => t.id !== topic.id), topic];
+      const updatedNuggets = [
+        ...existingData.nuggets.filter((n: Nugget) => !n.topicId.startsWith(topic.id)),
+        ...nuggets
+      ];
+
+      // Save updated data
+      const newData = { topics: updatedTopics, nuggets: updatedNuggets };
+      localStorage.setItem(DATA_KEY, JSON.stringify(newData));
+
+      console.log('Saved data:', newData);
+      return newData;
     } catch (error) {
-      console.error('Error saving to localStorage:', error);
-      throw new Error('Failed to save data');
+      console.error('Error importing data:', error);
+      throw error;
     }
   },
 
-  getAllData(): { topics: Topic[]; nuggets: Nugget[] } {
-    if (isServer()) {
-      return { topics: [], nuggets: [] };
-    }
-
+  getAllData() {
+    if (isServer()) return { topics: [], nuggets: [] };
+    
     try {
-      const stored = localStorage.getItem('notes-learner-data') || '{}';
+      const stored = localStorage.getItem(DATA_KEY);
+      if (!stored) return { topics: [], nuggets: [] };
+
       const data = JSON.parse(stored);
-      
-      return {
-        topics: Object.values(data).map((d: any) => d.topic),
-        nuggets: Object.values(data).flatMap((d: any) => d.nuggets),
-      };
+      console.log('Retrieved data:', data);
+      return data;
     } catch (error) {
       console.error('Error getting data:', error);
       return { topics: [], nuggets: [] };
     }
   },
 
-  deleteTopic(topicId: string) {
+  clearData() {
     if (isServer()) return;
-
     try {
-      const stored = localStorage.getItem('notes-learner-data') || '{}';
-      const data = JSON.parse(stored);
-      
-      delete data[topicId];
-      localStorage.setItem('notes-learner-data', JSON.stringify(data));
+      localStorage.removeItem(DATA_KEY);
+      console.log('Data cleared');
     } catch (error) {
-      console.error('Error deleting topic:', error);
-      throw new Error('Failed to delete topic');
+      console.error('Error clearing data:', error);
     }
   },
 
-  exportAllData(): string {
-    if (isServer()) return '{}';
-
+  exportData(): string {
+    if (isServer()) return '';
+    
     try {
-      const stored = localStorage.getItem('notes-learner-data') || '{}';
-      return JSON.stringify(JSON.parse(stored), null, 2);
+      const data = this.getAllData();
+      return JSON.stringify(data, null, 2);
     } catch (error) {
       console.error('Error exporting data:', error);
-      throw new Error('Failed to export data');
+      return '';
     }
   }
 };

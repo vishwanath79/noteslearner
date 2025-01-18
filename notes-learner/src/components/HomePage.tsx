@@ -1,29 +1,33 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { dataManager } from '@/lib/dataManager';
 import { Nugget, Topic } from '@/types';
-import NuggetCarousel from './NuggetCarousel';
-import StatsPanel from './StatsPanel';
-import ReviewMode from './ReviewMode';
-import SettingsPanel from './SettingsPanel';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import NuggetCarousel from './NuggetCarousel';
+import ReviewMode from './ReviewMode';
+import StatsPanel from './StatsPanel';
+import SettingsPanel from './SettingsPanel';
 import DataManager from './DataManager';
-import { dataManager } from '@/lib/dataManager';
-import PrivacyNotice from './PrivacyNotice';
-export default function HomePage({ nuggets, topics }: { nuggets: Nugget[], topics: Topic[] }) {
+
+interface HomePageProps {
+  nuggets: Nugget[];
+  topics: Topic[];
+}
+
+export default function HomePage({ nuggets, topics }: HomePageProps) {
   const [mode, setMode] = useState<'learn' | 'review'>('learn');
   const [showSettings, setShowSettings] = useState(false);
+  const [currentData, setCurrentData] = useState({ nuggets, topics });
 
-  const [data, setData] = useState(() => dataManager.getAllData());
-  
   const handleDataChange = () => {
-    setData(dataManager.getAllData());
+    const newData = dataManager.getAllData();
+    setCurrentData(newData);
   };
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
-      // Load settings to check if keyboard shortcuts are enabled
       const settings = JSON.parse(localStorage.getItem('notes-learner-settings') || '{}');
       if (!settings.keyboardShortcuts) return;
 
@@ -44,16 +48,14 @@ export default function HomePage({ nuggets, topics }: { nuggets: Nugget[], topic
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
-
   return (
     <div className="min-h-screen bg-[#121212] text-white">
       <Navbar />
       
       <main className="pt-20 px-8 pb-8 flex-grow">
         <div className="max-w-4xl mx-auto">
-      
           <div className="flex justify-end mb-8 space-x-4">
-          <DataManager onDataChange={handleDataChange} />
+            <DataManager onDataChange={handleDataChange} />
             <button
               onClick={() => setShowSettings(prev => !prev)}
               className="p-2 rounded-full bg-[#282828] hover:bg-[#3E3E3E] 
@@ -67,7 +69,7 @@ export default function HomePage({ nuggets, topics }: { nuggets: Nugget[], topic
             <SettingsPanel />
           ) : (
             <>
-              <StatsPanel nuggets={nuggets} />
+              <StatsPanel nuggets={currentData.nuggets} />
               
               <div className="mb-8 flex justify-center space-x-4">
                 <button
@@ -93,15 +95,20 @@ export default function HomePage({ nuggets, topics }: { nuggets: Nugget[], topic
               </div>
 
               {mode === 'learn' ? (
-                <NuggetCarousel nuggets={nuggets} topics={topics} />
+                <NuggetCarousel 
+                  nuggets={currentData.nuggets} 
+                  topics={currentData.topics} 
+                />
               ) : (
-                <ReviewMode nuggets={nuggets} topics={topics} />
+                <ReviewMode 
+                  nuggets={currentData.nuggets} 
+                  topics={currentData.topics} 
+                />
               )}
             </>
           )}
         </div>
       </main>
-      <PrivacyNotice />
       <Footer />
     </div>
   );
