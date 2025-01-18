@@ -5,35 +5,43 @@ const isServer = () => typeof window === 'undefined';
 const DATA_KEY = 'notes-learner-data';
 
 export const dataManager = {
-  importData(content: string) {
+  importData(content: string): { topics: Topic[], nuggets: Nugget[] } | void {
     if (isServer()) return;
 
     try {
-      // Parse with gray-matter
-      const parsed = matter(content);
-      console.log('Parsed content:', {
-        data: parsed.data,
-        content: parsed.content
-      });
-
-      // Create topic from frontmatter
-      const topic: Topic = {
-        id: parsed.data.id?.toString() || '',
-        name: parsed.data.name?.toString() || '',
-        color: parsed.data.color?.toString() || '#000000'
-      };
-
-      // Validate topic data
-      if (!topic.id || !topic.name || !topic.color) {
-        console.error('Invalid topic data:', topic);
-        throw new Error('Invalid frontmatter: missing required fields');
+      // Validate content
+      if (!content.trim()) {
+        throw new Error('Empty file content');
       }
 
-      // Parse nuggets from content
+      // Parse frontmatter
+      const parsed = matter(content);
+      console.log('Parsed content:', parsed);
+
+      if (!parsed.data || Object.keys(parsed.data).length === 0) {
+        throw new Error('No frontmatter found. Ensure file starts with ---');
+      }
+
+      // Create topic
+      const topic: Topic = {
+        id: String(parsed.data.id || ''),
+        name: String(parsed.data.name || ''),
+        color: String(parsed.data.color || '')
+      };
+
+      // Validate topic
+      if (!topic.id || !topic.name || !topic.color) {
+        throw new Error(`Missing required fields in frontmatter. Found: ${JSON.stringify(topic)}`);
+      }
+
+      // Parse nuggets
       const nuggets: Nugget[] = [];
       let currentQuestion = '';
 
-      parsed.content.split('\n').forEach(line => {
+      const lines = parsed.content.split('\n');
+      console.log('Content lines:', lines);
+
+      lines.forEach((line, index) => {
         line = line.trim();
         if (!line) return;
         
@@ -42,8 +50,7 @@ export const dataManager = {
         } else if (line.startsWith('D:') && currentQuestion) {
           nuggets.push({
             id: `${topic.id}-${nuggets.length}`,
-
-            topic: currentQuestion,  // Changed from 'question' to 'title'
+            question: currentQuestion,
             description: line.substring(2).trim(),
             topicId: topic.id
           });
@@ -51,65 +58,27 @@ export const dataManager = {
         }
       });
 
+      if (nuggets.length === 0) {
+        throw new Error('No valid nuggets found. Ensure format is T: followed by D:');
+      }
+
       console.log('Parsed nuggets:', nuggets);
 
-      // Get existing data
+      // Update storage
       const existingData = this.getAllData();
-      
-      // Merge new data with existing data
-      const updatedTopics = [...existingData.topics.filter((t: Topic) => t.id !== topic.id), topic];
-      const updatedNuggets = [
-        ...existingData.nuggets.filter((n: Nugget) => !n.topicId.startsWith(topic.id)),
-        ...nuggets
-      ];
+      const newData = {
+        topics: [...existingData.topics.filter(t => t.id !== topic.id), topic],
+        nuggets: [...existingData.nuggets.filter(n => !n.topicId.startsWith(topic.id)), ...nuggets]
+      };
 
-      // Save updated data
-      const newData = { topics: updatedTopics, nuggets: updatedNuggets };
       localStorage.setItem(DATA_KEY, JSON.stringify(newData));
-
-      console.log('Saved data:', newData);
       return newData;
+
     } catch (error) {
-      console.error('Error importing data:', error);
-      throw error;
+      console.error('Import error:', error);
+      throw new Error(`File format error: ${error.message}`);
     }
   },
 
-  getAllData() {
-    if (isServer()) return { topics: [], nuggets: [] };
-    
-    try {
-      const stored = localStorage.getItem(DATA_KEY);
-      if (!stored) return { topics: [], nuggets: [] };
-
-      const data = JSON.parse(stored);
-      console.log('Retrieved data:', data);
-      return data;
-    } catch (error) {
-      console.error('Error getting data:', error);
-      return { topics: [], nuggets: [] };
-    }
-  },
-
-  clearData() {
-    if (isServer()) return;
-    try {
-      localStorage.removeItem(DATA_KEY);
-      console.log('Data cleared');
-    } catch (error) {
-      console.error('Error clearing data:', error);
-    }
-  },
-
-  exportData(): string {
-    if (isServer()) return '';
-    
-    try {
-      const data = this.getAllData();
-      return JSON.stringify(data, null, 2);
-    } catch (error) {
-      console.error('Error exporting data:', error);
-      return '';
-    }
-  }
+  // ... rest of the code
 };
