@@ -10,7 +10,7 @@ import Navbar from './Navbar';
 import Footer from './Footer';
 import DataManager from './DataManager';
 import { dataManager } from '@/lib/dataManager';
-
+import PrivacyNotice from './PrivacyNotice';
 export default function HomePage({ nuggets, topics }: { nuggets: Nugget[], topics: Topic[] }) {
   const [mode, setMode] = useState<'learn' | 'review'>('learn');
   const [showSettings, setShowSettings] = useState(false);
@@ -51,6 +51,7 @@ export default function HomePage({ nuggets, topics }: { nuggets: Nugget[], topic
       
       <main className="pt-20 px-8 pb-8 flex-grow">
         <div className="max-w-4xl mx-auto">
+      
           <div className="flex justify-end mb-8 space-x-4">
           <DataManager onDataChange={handleDataChange} />
             <button
@@ -100,6 +101,7 @@ export default function HomePage({ nuggets, topics }: { nuggets: Nugget[], topic
           )}
         </div>
       </main>
+      <PrivacyNotice />
       <Footer />
     </div>
   );
