@@ -67,6 +67,15 @@ export const progressManager = {
       };
       localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
       this.getCurrentStreak(); // Update streak immediately
+      
+      // Dispatch custom event for immediate updates
+      window.dispatchEvent(new CustomEvent('nuggetCompleted'));
+      
+      // Also dispatch storage event for cross-tab updates
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: PROGRESS_KEY,
+        newValue: JSON.stringify(progress)
+      }));
     } catch (error) {
       console.error('Error marking as completed:', error);
     }

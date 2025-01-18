@@ -5,9 +5,10 @@ import { Nugget } from '@/types';
 interface NuggetCardProps {
   nugget: Nugget;
   topicColor: string;
+  showDescription?: boolean;
 }
 
-export default function NuggetCard({ nugget, topicColor }: NuggetCardProps) {
+export default function NuggetCard({ nugget, topicColor, showDescription = true }: NuggetCardProps) {
   if (!nugget) {
     return (
       <div className="p-6 rounded-lg bg-[#282828] shadow-lg">
@@ -25,9 +26,11 @@ export default function NuggetCard({ nugget, topicColor }: NuggetCardProps) {
       <h2 className="text-xl font-bold mb-4 text-white">
         {nugget.topic}
       </h2>
-      <p className="text-gray-300">
-        {nugget.description}
-      </p>
+      {showDescription && (
+        <p className="text-gray-300">
+          {nugget.description}
+        </p>
+      )}
     </div>
   );
 }

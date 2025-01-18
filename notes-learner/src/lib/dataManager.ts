@@ -22,39 +22,51 @@ export const dataManager = {
         throw new Error('No frontmatter found. Ensure file starts with ---');
       }
 
-      // Create topic
+      // Create topic with filename-based ID
       const topic: Topic = {
-        id: String(parsed.data.id || ''),
+        id: parsed.data.name.toLowerCase().replace(/\s+/g, '-'), // Generate ID from name
         name: String(parsed.data.name || ''),
         color: String(parsed.data.color || '')
       };
 
       // Validate topic
-      if (!topic.id || !topic.name || !topic.color) {
+      if (!topic.name || !topic.color) {
         throw new Error(`Missing required fields in frontmatter. Found: ${JSON.stringify(topic)}`);
       }
 
       // Parse nuggets
       const nuggets: Nugget[] = [];
-      let currentQuestion = '';
+      let currentTitle = '';
 
       const lines = parsed.content.split('\n');
       console.log('Content lines:', lines);
 
-      lines.forEach((line, index) => {
+      lines.forEach(line => {
         line = line.trim();
         if (!line) return;
         
         if (line.startsWith('T:')) {
-          currentQuestion = line.substring(2).trim();
-        } else if (line.startsWith('D:') && currentQuestion) {
+          currentTitle = line.substring(2).trim();
+        } else if (line.startsWith('D:') && currentTitle) {
+          const nuggetId = `${topic.id}-${nuggets.length}`;
           nuggets.push({
-            id: `${topic.id}-${nuggets.length}`,
-            question: currentQuestion,
+            id: nuggetId,
+            topic: currentTitle,
             description: line.substring(2).trim(),
             topicId: topic.id
           });
-          currentQuestion = '';
+          
+          // Initialize progress for new nugget
+          const progress = this.getProgress();
+          if (!progress[nuggetId]) {
+            progress[nuggetId] = {
+              completed: false,
+              lastReviewed: ''
+            };
+          }
+          localStorage.setItem('notes-learner-progress', JSON.stringify(progress));
+          
+          currentTitle = '';
         }
       });
 
@@ -64,7 +76,7 @@ export const dataManager = {
 
       console.log('Parsed nuggets:', nuggets);
 
-      // Update storage
+      // Update storage and trigger events
       const existingData = this.getAllData();
       const newData = {
         topics: [...existingData.topics.filter(t => t.id !== topic.id), topic],
@@ -72,13 +84,42 @@ export const dataManager = {
       };
 
       localStorage.setItem(DATA_KEY, JSON.stringify(newData));
-      return newData;
+      
+      // Dispatch data change event
+      window.dispatchEvent(new CustomEvent('dataChange', { detail: newData }));
+      
+      // Dispatch storage event for cross-tab updates
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: DATA_KEY,
+        newValue: JSON.stringify(newData)
+      }));
 
+      return newData;
     } catch (error) {
-      console.error('Import error:', error);
-      throw new Error(`File format error: ${error.message}`);
+      console.error('Import error:', error as Error);
+      throw new Error(`File format error: ${(error as Error).message}`);
     }
   },
 
-  // ... rest of the code
+  getAllData(): { topics: Topic[], nuggets: Nugget[] } {
+    if (isServer()) return { topics: [], nuggets: [] };
+    try {
+      const stored = localStorage.getItem(DATA_KEY);
+      return stored ? JSON.parse(stored) : { topics: [], nuggets: [] };
+    } catch (error) {
+      console.error('Error getting data:', error as Error);
+      return { topics: [], nuggets: [] };
+    }
+  },
+
+  getProgress(): Record<string, { completed: boolean; lastReviewed: string }> {
+    if (isServer()) return {};
+    try {
+      const stored = localStorage.getItem('notes-learner-progress') || '{}';
+      return JSON.parse(stored);
+    } catch (error) {
+      console.error('Error getting progress:', error);
+      return {};
+    }
+  }
 };

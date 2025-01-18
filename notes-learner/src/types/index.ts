@@ -3,9 +3,10 @@ export interface Topic {
   name: string;
   color: string;
 }
+
 export interface Nugget {
   id: string;
-  title: string;  // Add this line
+  topic: string;
   description: string;
   topicId: string;
 }

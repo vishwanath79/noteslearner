@@ -35,14 +35,23 @@ export default function StatsPanel({ nuggets }: StatsPanelProps) {
     updateStats();
 
     // Update on storage changes
-    window.addEventListener('storage', updateStats);
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'notes-learner-progress') {
+        updateStats();
+      }
+    };
     
-    // Custom event for updates
-    window.addEventListener('nuggetCompleted', updateStats);
+    // Custom event for immediate updates
+    const handleNuggetComplete = () => {
+      updateStats();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('nuggetCompleted', handleNuggetComplete);
 
     return () => {
-      window.removeEventListener('storage', updateStats);
-      window.removeEventListener('nuggetCompleted', updateStats);
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('nuggetCompleted', handleNuggetComplete);
     };
   }, [nuggets]);
 
