@@ -35,22 +35,49 @@ export function loadTopic(topicFileName: string): { topic: Topic; nuggets: Nugge
   const { data, content } = matter(fileContents);
   
   const topic: Topic = {
-    id: topicFileName.replace('.md', ''),
+    id: data.name.toLowerCase().replace(/\s+/g, '-'),
     name: data.name,
-    description: data.description,
-    color: data.color,
+    color: data.color || '#4A90E2'
   };
   
-  const nuggets = parseNuggets(content).map(nugget => ({
-    ...nugget,
-    topicId: topic.id,
-  }));
+  // Parse nuggets
+  const nuggets: Nugget[] = [];
   
+  // Split content by double newlines and filter out empty sections
+  const sections = content.split('\n\n').filter(section => section.trim());
+  
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i];
+    const lines = section.split('\n').map(line => line.trim()).filter(Boolean);
+    
+    let topic = '';
+    let description = '';
+    
+    for (const line of lines) {
+      if (line.startsWith('T:')) {
+        topic = line.substring(2).trim();
+      } else if (line.startsWith('D:')) {
+        description = line.substring(2).trim();
+      }
+    }
+    
+    if (topic && description) {
+      nuggets.push({
+        id: `${topic.id}-${i}`,
+        topic,
+        description,
+        topicId: topic.id
+      });
+    }
+  }
+  
+  console.log(`Parsed ${nuggets.length} nuggets from ${topicFileName}`);
   return { topic, nuggets };
 }
 
 // Function to get all topics
 export function getAllTopics(): string[] {
-  const topicsDirectory = path.join(process.cwd(), 'src/data/topics');
-  return fs.readdirSync(topicsDirectory);
+  const topicsDir = path.join(process.cwd(), 'src/data/topics');
+  return fs.readdirSync(topicsDir)
+    .filter(filename => filename.endsWith('.md'));
 }

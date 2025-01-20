@@ -61,23 +61,93 @@ export const progressManager = {
     if (isServer()) return;
     try {
       const progress = this.getProgress();
+      
+      // If already completed, don't update
+      if (progress[nuggetId]?.completed) {
+        return;
+      }
+      
       progress[nuggetId] = {
         completed: true,
         lastReviewed: new Date().toISOString()
       };
+      
+      // Save progress
       localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
-      this.getCurrentStreak(); // Update streak immediately
       
-      // Dispatch custom event for immediate updates
-      window.dispatchEvent(new CustomEvent('nuggetCompleted'));
+      // Update streak
+      const streak = this.getCurrentStreak();
+      localStorage.setItem(STREAK_KEY, streak.toString());
       
-      // Also dispatch storage event for cross-tab updates
+      // Dispatch storage event for cross-tab updates
       window.dispatchEvent(new StorageEvent('storage', {
         key: PROGRESS_KEY,
         newValue: JSON.stringify(progress)
       }));
+
+      // Dispatch custom event with progress data
+      window.dispatchEvent(new CustomEvent('nuggetCompleted', {
+        detail: { 
+          nuggetId, 
+          progress,
+          streak,
+          timestamp: new Date().toISOString()
+        }
+      }));
+      
+      console.log('Marked as completed:', { 
+        nuggetId, 
+        progress, 
+        streak,
+        timestamp: new Date().toISOString() 
+      });
     } catch (error) {
       console.error('Error marking as completed:', error);
+    }
+  },
+
+  toggleCompletion(nuggetId: string): void {
+    if (isServer()) return;
+    try {
+      const progress = this.getProgress();
+      const isCurrentlyCompleted = progress[nuggetId]?.completed || false;
+      
+      if (isCurrentlyCompleted) {
+        // Remove the completion status
+        delete progress[nuggetId];
+      } else {
+        // Mark as completed
+        progress[nuggetId] = {
+          completed: true,
+          lastReviewed: new Date().toISOString()
+        };
+      }
+      
+      // Save progress
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+      
+      // Update streak
+      const streak = this.getCurrentStreak();
+      localStorage.setItem(STREAK_KEY, streak.toString());
+      
+      // Dispatch storage event for cross-tab updates
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: PROGRESS_KEY,
+        newValue: JSON.stringify(progress)
+      }));
+
+      // Dispatch custom event
+      window.dispatchEvent(new CustomEvent('nuggetToggled', {
+        detail: { 
+          nuggetId, 
+          progress,
+          streak,
+          isCompleted: !isCurrentlyCompleted,
+          timestamp: new Date().toISOString()
+        }
+      }));
+    } catch (error) {
+      console.error('Error toggling completion:', error);
     }
   }
 };

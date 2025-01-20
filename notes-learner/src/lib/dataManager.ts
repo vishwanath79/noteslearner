@@ -9,74 +9,77 @@ export const dataManager = {
     if (isServer()) return;
 
     try {
+      console.log('Importing content:', content.substring(0, 200));
+
       // Validate content
       if (!content.trim()) {
         throw new Error('Empty file content');
       }
 
-      // Parse frontmatter
-      const parsed = matter(content);
-      console.log('Parsed content:', parsed);
-
-      if (!parsed.data || Object.keys(parsed.data).length === 0) {
-        throw new Error('No frontmatter found. Ensure file starts with ---');
+      // Parse frontmatter with detailed error handling
+      let parsed;
+      try {
+        parsed = matter(content);
+        console.log('Parsed frontmatter:', parsed.data);
+      } catch (e) {
+        throw new Error(`Failed to parse frontmatter: ${(e as Error).message}`);
       }
 
-      // Create topic with filename-based ID
+      // Create topic
       const topic: Topic = {
-        id: parsed.data.name.toLowerCase().replace(/\s+/g, '-'), // Generate ID from name
-        name: String(parsed.data.name || ''),
-        color: String(parsed.data.color || '')
+        id: parsed.data.name.toLowerCase().replace(/\s+/g, '-'),
+        name: String(parsed.data.name),
+        color: parsed.data.color || '#4A90E2'
       };
 
-      // Validate topic
-      if (!topic.name || !topic.color) {
-        throw new Error(`Missing required fields in frontmatter. Found: ${JSON.stringify(topic)}`);
-      }
-
-      // Parse nuggets
+      // Parse nuggets with detailed validation
       const nuggets: Nugget[] = [];
       let currentTitle = '';
+      let currentDescription = '';
 
-      const lines = parsed.content.split('\n');
-      console.log('Content lines:', lines);
-
-      lines.forEach(line => {
-        line = line.trim();
-        if (!line) return;
+      // Split content by double newlines to separate nuggets
+      const sections = parsed.content.split('\n\n');
+      
+      for (const section of sections) {
+        const lines = section.split('\n');
         
-        if (line.startsWith('T:')) {
-          currentTitle = line.substring(2).trim();
-        } else if (line.startsWith('D:') && currentTitle) {
-          const nuggetId = `${topic.id}-${nuggets.length}`;
-          nuggets.push({
-            id: nuggetId,
-            topic: currentTitle,
-            description: line.substring(2).trim(),
-            topicId: topic.id
-          });
-          
-          // Initialize progress for new nugget
-          const progress = this.getProgress();
-          if (!progress[nuggetId]) {
-            progress[nuggetId] = {
-              completed: false,
-              lastReviewed: ''
-            };
-          }
-          localStorage.setItem('notes-learner-progress', JSON.stringify(progress));
-          
-          currentTitle = '';
-        }
-      });
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (!trimmedLine) continue;
 
-      if (nuggets.length === 0) {
-        throw new Error('No valid nuggets found. Ensure format is T: followed by D:');
+          if (trimmedLine.startsWith('T:')) {
+            // Save previous nugget if exists
+            if (currentTitle && currentDescription) {
+              const nuggetId = `${topic.id}-${nuggets.length}`;
+              nuggets.push({
+                id: nuggetId,
+                topic: currentTitle,
+                description: currentDescription,
+                topicId: topic.id
+              });
+            }
+            currentTitle = trimmedLine.substring(2).trim();
+            currentDescription = '';
+          } else if (trimmedLine.startsWith('D:')) {
+            currentDescription = trimmedLine.substring(2).trim();
+          }
+        }
+      }
+
+      // Add final nugget if exists
+      if (currentTitle && currentDescription) {
+        const nuggetId = `${topic.id}-${nuggets.length}`;
+        nuggets.push({
+          id: nuggetId,
+          topic: currentTitle,
+          description: currentDescription,
+          topicId: topic.id
+        });
       }
 
       console.log('Parsed nuggets:', nuggets);
 
-      // Update storage and trigger events
+      // Update storage
       const existingData = this.getAllData();
       const newData = {
         topics: [...existingData.topics.filter(t => t.id !== topic.id), topic],
@@ -84,19 +87,11 @@ export const dataManager = {
       };
 
       localStorage.setItem(DATA_KEY, JSON.stringify(newData));
-      
-      // Dispatch data change event
       window.dispatchEvent(new CustomEvent('dataChange', { detail: newData }));
-      
-      // Dispatch storage event for cross-tab updates
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: DATA_KEY,
-        newValue: JSON.stringify(newData)
-      }));
 
       return newData;
     } catch (error) {
-      console.error('Import error:', error as Error);
+      console.error('Import error:', error);
       throw new Error(`File format error: ${(error as Error).message}`);
     }
   },
@@ -105,7 +100,11 @@ export const dataManager = {
     if (isServer()) return { topics: [], nuggets: [] };
     try {
       const stored = localStorage.getItem(DATA_KEY);
-      return stored ? JSON.parse(stored) : { topics: [], nuggets: [] };
+      const data = stored ? JSON.parse(stored) : { topics: [], nuggets: [] };
+      return {
+        topics: Array.isArray(data.topics) ? data.topics : [],
+        nuggets: Array.isArray(data.nuggets) ? data.nuggets : []
+      };
     } catch (error) {
       console.error('Error getting data:', error as Error);
       return { topics: [], nuggets: [] };

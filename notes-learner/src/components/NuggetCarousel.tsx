@@ -11,19 +11,25 @@ interface NuggetCarouselProps {
 }
 
 export default function NuggetCarousel({ nuggets, topics }: NuggetCarouselProps) {
+  const [isClient, setIsClient] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [filteredNuggets, setFilteredNuggets] = useState(nuggets);
-  const [selectedTopic, setSelectedTopic] = useState<string>('all');
+  const [filteredNuggets, setFilteredNuggets] = useState<Nugget[]>([]);
+  const [selectedTopic, setSelectedTopic] = useState<string>(topics[0]?.id || '');
   const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout>>(null);
+
+  // Set client-side rendering flag
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Filter nuggets when topic selection changes
   useEffect(() => {
-    const filtered = selectedTopic === 'all'
-      ? nuggets
-      : nuggets.filter(nugget => nugget.topicId === selectedTopic);
+    if (!isClient) return;
+    
+    const filtered = nuggets.filter(nugget => nugget.topicId === selectedTopic);
     setFilteredNuggets(filtered);
     setCurrentIndex(0);
-  }, [selectedTopic, nuggets]);
+  }, [selectedTopic, nuggets, isClient]);
 
   const goToNext = () => {
     setCurrentIndex((prev) => (prev + 1) % filteredNuggets.length);
@@ -68,6 +74,20 @@ export default function NuggetCarousel({ nuggets, topics }: NuggetCarouselProps)
     return currentTopic?.color || '#000000';
   };
 
+  // Show loading state during server-side rendering
+  if (!isClient) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-center mb-4">
+          <div className="w-48 h-10 bg-[#282828] rounded-lg animate-pulse" />
+        </div>
+        <div className="relative h-[300px]">
+          <div className="w-full h-full bg-[#282828] rounded-lg animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Topic Filter */}
@@ -75,10 +95,9 @@ export default function NuggetCarousel({ nuggets, topics }: NuggetCarouselProps)
         <select
           value={selectedTopic}
           onChange={(e) => setSelectedTopic(e.target.value)}
-          className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 
-                     bg-white dark:bg-gray-800 text-gray-800 dark:text-white"
+          className="px-4 py-2 rounded-lg border border-gray-700 
+                   bg-[#282828] text-white"
         >
-          <option value="all">All Topics</option>
           {topics.map((topic) => (
             <option key={topic.id} value={topic.id}>
               {topic.name}

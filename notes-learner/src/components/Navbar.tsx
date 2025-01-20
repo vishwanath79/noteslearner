@@ -6,7 +6,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <div className="text-[#1DB954] font-bold text-xl">Notes Learner</div>
         <a
-          href="https://vishsubramanian.me"
+          href="https://github.com/vishwanath79/noteslearner"
           target="_blank"
           rel="noopener noreferrer"
           className="text-gray-300 hover:text-white transition-colors"

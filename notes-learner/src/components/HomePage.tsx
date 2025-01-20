@@ -15,14 +15,59 @@ interface HomePageProps {
   topics: Topic[];
 }
 
-export default function HomePage({ nuggets, topics }: HomePageProps) {
+export default function HomePage({ nuggets: initialNuggets, topics: initialTopics }: HomePageProps) {
   const [showSettings, setShowSettings] = useState(false);
-  const [currentData, setCurrentData] = useState({ nuggets, topics });
+  const [currentData, setCurrentData] = useState<{ nuggets: Nugget[], topics: Topic[] }>(() => {
+    if (typeof window === 'undefined') {
+      return { nuggets: initialNuggets || [], topics: initialTopics || [] };
+    }
+    const storedData = dataManager.getAllData();
+    return storedData.nuggets.length || storedData.topics.length ? storedData : {
+      nuggets: initialNuggets || [],
+      topics: initialTopics || []
+    };
+  });
 
   const handleDataChange = () => {
     const newData = dataManager.getAllData();
     setCurrentData(newData);
+    // Dispatch dataChange event for other components
+    window.dispatchEvent(new CustomEvent('dataChange', { detail: newData }));
   };
+
+  // Initialize data in localStorage if empty and set up event listeners
+  useEffect(() => {
+    const storedData = dataManager.getAllData();
+    if (!storedData.nuggets.length && !storedData.topics.length) {
+      const initialData = {
+        nuggets: initialNuggets || [],
+        topics: initialTopics || []
+      };
+      localStorage.setItem('notes-learner-data', JSON.stringify(initialData));
+      setCurrentData(initialData);
+    }
+
+    // Listen for storage events from other tabs
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'notes-learner-data') {
+        const newData = JSON.parse(e.newValue || '{"nuggets":[],"topics":[]}');
+        setCurrentData(newData);
+      }
+    };
+
+    // Listen for nugget completion events
+    const handleNuggetComplete = () => {
+      handleDataChange();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('nuggetCompleted', handleNuggetComplete);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('nuggetCompleted', handleNuggetComplete);
+    };
+  }, [initialNuggets, initialTopics]);
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {

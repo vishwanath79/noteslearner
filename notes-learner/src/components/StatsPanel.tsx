@@ -9,51 +9,87 @@ interface StatsPanelProps {
 }
 
 export default function StatsPanel({ nuggets }: StatsPanelProps) {
+  // Initialize with empty stats to match server-side rendering
   const [stats, setStats] = useState({
     streak: 0,
     completedNuggets: 0,
     completionRate: 0,
   });
 
+  const [isClient, setIsClient] = useState(false);
+
+  // Use useEffect to indicate client-side rendering
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+
     const updateStats = () => {
       if (!nuggets?.length) return;
       
       const progress = progressManager.getProgress();
-      const completedNuggets = nuggets.filter(n => progress[n.id]?.completed).length;
-      const completionRate = Math.round((completedNuggets / nuggets.length) * 100) || 0;
+      console.log('Current progress:', progress);
+      
+      const completedNuggets = nuggets.filter(nugget => {
+        const isCompleted = progress[nugget.id]?.completed;
+        console.log(`Nugget ${nugget.id} completed:`, isCompleted);
+        return isCompleted;
+      }).length;
+      
+      const completionRate = Math.round((completedNuggets / nuggets.length) * 100);
       const streak = progressManager.getCurrentStreak();
+
+      console.log('Updating stats:', { completedNuggets, completionRate, streak });
 
       setStats({
         streak,
         completedNuggets,
-        completionRate,
+        completionRate: isNaN(completionRate) ? 0 : completionRate,
       });
     };
 
-    // Update initially
     updateStats();
 
-    // Update on storage changes
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'notes-learner-progress') {
+      if (e.key === 'notes-learner-progress' || e.key === 'notes-learner-streak') {
+        console.log('Storage change detected:', e.key);
         updateStats();
       }
     };
     
-    // Custom event for immediate updates
     const handleNuggetComplete = () => {
+      console.log('Nugget completed event received');
       updateStats();
     };
 
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('nuggetCompleted', handleNuggetComplete);
+    window.addEventListener('dataChange', updateStats);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('nuggetCompleted', handleNuggetComplete);
+      window.removeEventListener('dataChange', updateStats);
     };
-  }, [nuggets]);
+  }, [nuggets, isClient]);
+
+  // Only show stats after client-side hydration
+  if (!isClient) {
+    return (
+      <div className="grid grid-cols-3 gap-4 mb-8">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="bg-[#282828] p-6 rounded-lg">
+            <div className="animate-pulse">
+              <div className="h-4 bg-gray-700 rounded w-20 mb-2"></div>
+              <div className="h-8 bg-gray-700 rounded w-16"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-3 gap-4 mb-8">
