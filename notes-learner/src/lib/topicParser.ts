@@ -50,22 +50,22 @@ export function loadTopic(topicFileName: string): { topic: Topic; nuggets: Nugge
     const section = sections[i];
     const lines = section.split('\n').map(line => line.trim()).filter(Boolean);
     
-    let topic = '';
+    let topicText = '';
     let description = '';
     
     for (const line of lines) {
       if (line.startsWith('T:')) {
-        topic = line.substring(2).trim();
+        topicText = line.substring(2).trim();
       } else if (line.startsWith('D:')) {
         description = line.substring(2).trim();
       }
     }
     
-    if (topic && description) {
+    if (topicText && description) {
       nuggets.push({
         id: `${topic.id}-${i}`,
-        topic,
-        description,
+        topic: topicText,
+        description: description,
         topicId: topic.id
       });
     }
