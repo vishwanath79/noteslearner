@@ -1,10 +1,10 @@
 # Notes Learner
 
-A modern web application for learning through spaced repetition of knowledge nuggets. Built with Next.js, TypeScript, and Tailwind CSS.
+A modern web application for learning through spaced repetition of knowledge nuggets. Built with Next.js, TypeScript, and Tailwind CSS. Built this to add a lightweight knowledge base for my own use.
 
 ## Features
 
-- 📚 Learn mode with interactive flashcards
+- 📚 Learn mode with flashcards
 - 🔄 Review mode for spaced repetition
 - 📊 Progress tracking and statistics
 - ⚡ Keyboard shortcuts for quick navigation
@@ -12,8 +12,13 @@ A modern web application for learning through spaced repetition of knowledge nug
 - 🔧 Customizable settings
 - 📱 Responsive design
 
-## Getting Started
+More features coming soon.
+- [ ] Add a quiz mode
+- [ ] Add a spaced repetition mode
+- [ ] Add some AI to help with learning so I can call this an AI qpp 
 
+
+## Getting Started
 ### Prerequisites
 
 - Node.js 18+ 
@@ -52,12 +57,6 @@ color: "#F7DF1E"
 
 
 
-## Built With
-
-- [Next.js](https://nextjs.org/) - React framework
-- [TypeScript](https://www.typescriptlang.org/) - Type safety
-- [Tailwind CSS](https://tailwindcss.com/) - Styling
-- [Framer Motion](https://www.framer.com/motion/) - Animations
 
 ## License
 
