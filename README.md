@@ -15,7 +15,7 @@ A modern web application for learning through spaced repetition of knowledge nug
 More features coming soon.
 - [ ] Add a quiz mode
 - [ ] Add a spaced repetition mode
-- [ ] Add some AI to help with learning so I can call this an AI qpp 
+- [ ] Add some AI to help with learning so I can call this an AI app wink 
 
 
 ## Getting Started
